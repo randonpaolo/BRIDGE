@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Bridge - Impostazioni</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #0f6b3f;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    header {
+      background: #094d2b;
+      padding: 10px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    header h1 {
+      font-size: 20px;
+      margin: 0;
+    }
+    main {
+      flex: 1;
+      padding: 20px;
+    }
+
+    /* Sezione impostazioni */
+    #setup-area {
+      display: flex;
+      justify-content: space-around;
+      flex-wrap: wrap;
+      margin-top: 20px;
+    }
+    #player-pool {
+      width: 200px;
+      min-height: 150px;
+      border: 2px dashed #ccc;
+      border-radius: 8px;
+      padding: 10px;
+    }
+    #player-pool h3 {
+      text-align: center;
+      margin-bottom: 10px;
+    }
+    .player {
+      background: #147a43;
+      border: 1px solid #fff;
+      border-radius: 6px;
+      padding: 6px;
+      margin: 5px 0;
+      text-align: center;
+      cursor: grab;
+      user-select: none;
+    }
+
+    /* Tavolo da gioco */
+    #table {
+      position: relative;
+      width: 400px;
+      height: 400px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 50% 50%, #13884d 0%, #0b5c34 80%);
+      margin: auto;
+    }
+    .seat {
+      position: absolute;
+      width: 80px;
+      height: 30px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 2px dashed rgba(255, 255, 255, 0.3);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+    }
+    .seat[data-pos="N"] { top: 10px; left: 160px; }
+    .seat[data-pos="E"] { top: 160px; left: 340px; }
+    .seat[data-pos="S"] { top: 340px; left: 160px; }
+    .seat[data-pos="W"] { top: 160px; left: 10px; }
+
+    .seat.occupied {
+      border-style: solid;
+      background: rgba(255,255,255,0.2);
+    }
+
+    #pairs {
+      margin-top: 30px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Bridge</h1>
+  </header>
+
+  <main>
+    <h2>Impostazioni e disposizione giocatori</h2>
+
+    <div id="setup-area">
+      <div id="player-pool">
+        <h3>Giocatori</h3>
+        <div class="player" draggable="true">Giocatore 1</div>
+        <div class="player" draggable="true">Giocatore 2</div>
+        <div class="player" draggable="true">Giocatore 3</div>
+        <div class="player" draggable="true">Giocatore 4</div>
+        <div class="player" draggable="true">Giocatore 5</div>
+      </div>
+
+      <div id="table">
+        <div class="seat" data-pos="N">N</div>
+        <div class="seat" data-pos="E">E</div>
+        <div class="seat" data-pos="S">S</div>
+        <div class="seat" data-pos="W">W</div>
+      </div>
+    </div>
+
+    <div id="pairs">
+      <h3>Coppie di partenza</h3>
+      <p><strong>N–S:</strong> <span id="pairNS">—</span></p>
+      <p><strong>E–W:</strong> <span id="pairEW">—</span></p>
+    </div>
+  </main>
+
+  <script>
+    const players = document.querySelectorAll('.player');
+    const seats = document.querySelectorAll('.seat');
+    const pool = document.getElementById('player-pool');
+    const pairNS = document.getElementById('pairNS');
+    const pairEW = document.getElementById('pairEW');
+
+    let dragged = null;
+
+    players.forEach(p => {
+      p.addEventListener('dragstart', e => {
+        dragged = p;
+        e.dataTransfer.setData('text/plain', p.textContent);
+      });
+    });
+
+    function allowDrop(ev){ ev.preventDefault(); }
+
+    seats.forEach(seat => {
+      seat.addEventListener('dragover', allowDrop);
+      seat.addEventListener('drop', e => {
+        e.preventDefault();
+        if (!dragged) return;
+
+        // se già occupato, rimanda l'attuale nel pool
+        if (seat.querySelector('.player')) {
+          pool.appendChild(seat.querySelector('.player'));
+        }
+
+        seat.textContent = '';
+        seat.classList.add('occupied');
+        seat.appendChild(dragged);
+        dragged = null;
+        updatePairs();
+      });
+    });
+
+    pool.addEventListener('dragover', allowDrop);
+    pool.addEventListener('drop', e => {
+      e.preventDefault();
+      if (!dragged) return;
+
+      // libera posto se necessario
+      seats.forEach(seat => {
+        if (seat.contains(dragged)) {
+          seat.textContent = seat.dataset.pos;
+          seat.classList.remove('occupied');
+        }
+      });
+
+      pool.appendChild(dragged);
+      dragged = null;
+      updatePairs();
+    });
+
+    function updatePairs(){
+      const north = document.querySelector('.seat[data-pos="N"] .player');
+      const south = document.querySelector('.seat[data-pos="S"] .player');
+      const east = document.querySelector('.seat[data-pos="E"] .player');
+      const west = document.querySelector('.seat[data-pos="W"] .player');
+
+      pairNS.textContent = north && south ? `${north.textContent} – ${south.textContent}` : '—';
+      pairEW.textContent = east && west ? `${east.textContent} – ${west.textContent}` : '—';
+    }
+  </script>
+</body>
+</html>
